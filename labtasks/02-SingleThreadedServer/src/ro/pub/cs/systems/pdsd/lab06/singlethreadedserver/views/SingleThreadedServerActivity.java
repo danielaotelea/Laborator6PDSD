@@ -50,6 +50,34 @@ public class SingleThreadedServerActivity extends Activity {
 		
 	}
 	
+	
+	private class NewThreadExt extends Thread
+	{
+		private Socket socket;
+		
+		public NewThreadExt(Socket socket)
+		{
+			this.socket = socket;
+		}
+		@Override
+		public void run() {
+			PrintWriter pw = null;
+			try {
+				pw = Utilities.getWriter(socket);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			pw.println(serverTextEditText.getText().toString() + "\n");
+			try {
+				socket.close();
+				Log.v(Constants.TAG, "Connection closed");
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
 	private class ServerThread extends Thread {
 		
 		private boolean isRunning;
@@ -88,11 +116,8 @@ public class SingleThreadedServerActivity extends Activity {
 				serverSocket = new ServerSocket(Constants.SERVER_PORT);
 				while (isRunning) {
 					Socket socket = serverSocket.accept();
-					Log.v(Constants.TAG, "Connection opened with "+socket.getInetAddress()+":"+socket.getLocalPort());
-					PrintWriter printWriter = Utilities.getWriter(socket);
-					printWriter.println(serverTextEditText.getText().toString());
-					socket.close();
-					Log.v(Constants.TAG, "Connection closed");
+					new NewThreadExt(socket).start();
+					
 				}
 			} catch (IOException ioException) {
 				Log.e(Constants.TAG, "An exception has occurred: "+ioException.getMessage());
@@ -100,7 +125,7 @@ public class SingleThreadedServerActivity extends Activity {
 					ioException.printStackTrace();
 				}
 			}
-		}
+		}	
 	}
 
 	@Override
@@ -130,4 +155,11 @@ public class SingleThreadedServerActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	@Override
+	public void onDestroy() {
+	  super.onDestroy();
+	  singleThreadedServer.stopServer();
+	}
+	
 }
+/*192.168.56.101:2015*/
